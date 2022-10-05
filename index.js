@@ -1,29 +1,148 @@
-const mysql2 = require('mysql2');
+const mysql = require('mysql2');
 const consoleTable = require('console.table');
+const inquirer = require('inquirer');
+const db = mysql.createConnection(
+    {
+        host: 'localhost',
+        user: 'root',
+        password: 'root',
+        database: 'myemployees_db'
+    },
+    console.log(`Connected to the myemployees_db database.`)
+);
 
 const { getSelection, mainQuestions, mainMessage } = require('./questions');
 
 function viewDepartments() {
-
+    // formatted table showing department names and department ids
+    const query = 'SELECT * FROM department'
+    db.query(query, function (err, res) {
+        console.table(res);
+        doMain();
+    });
     console.log("Departments");
 };
 
 function viewRoles() {
+    // job title, role id, the department that role belongs to, and the salary for that role
+    const query = 'SELECT * FROM role'
+    db.query(query, function (err, res) {
+        console.table(res);
+        doMain();
+    });
     console.log("Roles");
 };
 
 function viewEmployees() {
-    console.log("Employees");
+    // formatted table showing employee data, including employee ids, first names, last names, job titles, departments, salaries, and managers that the employees report to
+    const query = 'SELECT * FROM employee'
+    db.promise().query(query).then( ([rows,fields]) => {
+        console.table(rows);
+        doMain();
+    }).catch(console.log);
 };
 
-const funcs = [viewDepartments, viewRoles, viewEmployees];
+function addDepartment() {
+    inquirer
+        .prompt({
+            type: 'input',
+            message: 'What department would you like to add?',
+            name: 'newDepartment'
+        })
+        .then(function (res) {
+            const newDepartment = res.newDepartment;
+            const query = `INSERT INTO DEPARTMENT (name) VALUES ('${newDepartment}')`;
+            db.query(query, function (err, res) {
+                if (err) throw err;
+            });
+            console.table(res);
+            doMain();
+        })
+}
+
+function addRole() {
+
+    var query = 'select name, id from department';
+    var deptNames = [];
+    var deptIDs = [];
+
+    db.promise().query(query).then( ([rows, fields]) => {
+        console.log('length: ' + rows.length);
+
+        for(i = 0; i < rows.length; i++) {
+            deptNames.push(rows[i].name);
+            deptIDs.push(rows[i].id);
+        }
+
+        inquirer.prompt([
+            {
+                type: 'input',
+                message: 'What role would you like to add?',
+                name: 'newRole'
+            },
+            {
+                type: 'input',
+                message: 'What is the salary?',
+                name: 'salary'     
+            },
+            {
+                type: 'list',
+                message: 'What department is it in?',
+                choices: deptNames,
+                name: 'dept'
+            }
+        ])
+        .then(function (res) {
+           
+            const newRole = res.newRole;
+            const newSalary = res.salary;
+            const deptID = deptIDs[deptNames.indexOf(res.dept)];
+            console.log(`'${newRole}', ${newSalary}, ${deptID}`);
+            query = `INSERT INTO ROLE (title, salary, department_id) VALUES ('${newRole}', ${newSalary}, ${deptID})`;
+            db.query(query, function (err, res) {
+                if (err) throw err;
+            });
+            console.table(res);
+            doMain();
+        });
+
+    }).catch(console.log);
+        
+}
 
 
-getSelection(mainQuestions, mainMessage).then(val => {
-    
-    funcs[val]();
 
-});
+
+function addEmployee() {
+    console.log('Add Employee');
+    doMain();
+
+}
+
+function updateEmployee() {
+    console.log('Update');
+    doMain();
+
+}
+
+function quit() {
+    console.log('Quit');
+}
+
+const funcs = [viewDepartments, viewRoles, viewEmployees, addDepartment,
+    addRole, addEmployee, updateEmployee, quit];
+
+
+function doMain() {
+    console.log('Do Main');
+    getSelection(mainQuestions, mainMessage).then(val => {
+
+        funcs[val]();
+
+    });
+}
+
+doMain();
 
 
 
