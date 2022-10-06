@@ -15,17 +15,16 @@ const { getSelection, mainQuestions, mainMessage } = require('./questions');
 
 function viewDepartments() {
     // formatted table showing department names and department ids
-    const query = 'SELECT * FROM department'
+    const query = 'SELECT name as Name FROM department'
     db.query(query, function (err, res) {
         console.table(res);
         doMain();
     });
-    console.log("Departments");
 };
 
 function viewRoles() {
     // job title, role id, the department that role belongs to, and the salary for that role
-    const query = 'SELECT * FROM role'
+    const query = 'SELECT r.title as Title, r.salary as Salary, d.name as Dept FROM role r, department d where r.department_id = d.id'
     db.query(query, function (err, res) {
         console.table(res);
         doMain();
@@ -35,7 +34,7 @@ function viewRoles() {
 
 function viewEmployees() {
     // formatted table showing employee data, including employee ids, first names, last names, job titles, departments, salaries, and managers that the employees report to
-    const query = 'SELECT * FROM employee'
+    const query = `SELECT concat(e1.first_name, ' ', e1.last_name) as Name, r.title as Role from employee e1, role r where e1.role_id = r.id`;
 
     db.query(query, function (err, res) {
         console.table(res);
@@ -165,8 +164,8 @@ const addEmployee = () => {
                 let role_id = parseInt(roleIdArray[roleTitleArray.indexOf(ans.role_title)]);
 
                 let mgrIndex = mgrNameArray.indexOf(ans.manager_name);
-                let manager_id = (mgrIndex == mgrNameArray.length-1) ? null : parseInt(mgrIdArray[mgrIndex]);
-                
+                let manager_id = (mgrIndex == mgrNameArray.length - 1) ? null : parseInt(mgrIdArray[mgrIndex]);
+
                 query = `insert into employee (first_name, last_name, role_id, manager_id) VALUES ('${first}', '${last}', ${role_id}, ${manager_id})`;
 
                 db.promise().query(query).then((response) => {
@@ -174,7 +173,7 @@ const addEmployee = () => {
                 }).catch(err => {
                     console.log('Unable to insert employee');
                 });
-                
+
                 doMain();
 
             });
@@ -188,39 +187,67 @@ function updateEmployee() {
     //     // get employee
     //     // get roles
     //     let empNames = [];
+    db.promise().query('select first_name, last_name, id from employee').then(result2 => {
+        let empNameArray = result2[0].map(m => `${m.first_name} ${m.last_name}`);
+        let empIdArray = result2[0].map(m => m.id);
 
-    //    inquirer.prompt({
-    //     type: 'list',
-    //     message: 'Which employee would you like to update?',
-    //     choices: empNames
-    //    })
+        db.promise().query('select id, title from role').then(result => {
+            let roleTitleArray = result[0].map(e => e.title);
+            let roleIdArray = result[0].map(e => e.id);
 
+            inquirer.prompt([
+                {
+                    type: 'list',
+                    message: 'Which employee would you like to update?',
+                    name: 'employee',
+                    choices: empNameArray
+                },
+                {
+                    type: 'list',
+                    message: `Select the employee's new role.`,
+                    choices: roleTitleArray,
+                    name: 'role'
+                }]).then((ans) => {
+                    let role_id = parseInt(roleIdArray[roleTitleArray.indexOf(ans.role)]);
+                    let employee_id = parseInt(empIdArray[empNameArray.indexOf(ans.employee)]);
 
+                    query = `update employee SET role_id = ${role_id} WHERE id = ${employee_id}`;
 
-    console.log('Update');
-    doMain();
+                    db.promise().query(query).then((response) => {
+                        console.log('inserted employee');
+                    }).catch(err => {
+                        console.log('Unable to insert employee');
+                    });
+    
+                    doMain();
+            });
 
-}
-
-function quit() {
-    console.log('Bye!');
-    process.exit();
-}
-
-const funcs = [viewDepartments, viewRoles, viewEmployees, addDepartment,
-    addRole, addEmployee, updateEmployee, quit];
-
-
-function doMain() {
-    console.log('Do Main');
-    getSelection(mainQuestions, mainMessage).then((val) => {
-
-        funcs[val]();
+        });
 
     });
+
 }
 
-doMain();
+
+function quit() {
+                console.log('Bye!');
+                process.exit();
+            }
+
+const funcs = [viewDepartments, viewRoles, viewEmployees, addDepartment,
+            addRole, addEmployee, updateEmployee, quit];
+
+
+        function doMain() {
+            console.log('Do Main');
+            getSelection(mainQuestions, mainMessage).then((val) => {
+
+                funcs[val]();
+
+            });
+        }
+
+        doMain();
 
 
 
