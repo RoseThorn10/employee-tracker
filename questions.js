@@ -54,7 +54,7 @@ let mainMessage = 'What would you like to do?';
 
         var choice;
 
-        return inquirer.prompt(inq).then(response => {
+        return inquirer.prompt(inq).then((response) => {
             choice = questions.indexOf(response.select)
             return choice;
         });
