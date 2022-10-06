@@ -122,20 +122,18 @@ function addRole() {
 // function addEmployee() {
 
 const addEmployee = () => {
-    let titleArray = [];
-    let mgrArray = [];
-    //        db.query('select title, id from role', (err, result) => {
-    //            if (err) throw err;
-    db.query('select title, id from role', (err, result) => {
-        if (err) throw err;
-        titleArray = result.map(e => JSON.stringify(e));
-        console.log(titleArray);
-        db.query('select id, first_name, last_name from employee', (err, result) => {
-            if (err) throw err;
-            mgrArray = result.map(e => JSON.stringify(e));
-            console.log(mgrArray);
 
-        
+    db.promise().query('select id, title from role').then(result => {
+        let roleTitleArray = result[0].map(e => e.title);
+        let roleIdArray = result[0].map(e => e.id);
+
+        db.promise().query('select first_name, last_name, id from employee').then(result2 => {
+            let mgrNameArray = result2[0].map(m => `${m.first_name} ${m.last_name}`);
+            let mgrIdArray = result2[0].map(m => m.id);
+
+            mgrNameArray.push('None');
+            mgrIdArray.push('');
+
             inquirer.prompt([
                 {
                     type: 'input',
@@ -151,28 +149,38 @@ const addEmployee = () => {
                     type: 'list',
                     message: `What is the employee's role?`,
                     name: 'role_title',
-                    choices: titleArray
+                    choices: roleTitleArray
                 },
                 {
                     type: 'list',
                     message: `Who is the employee's manager?`,
-                    name: 'manager_id',
-                    choices: mgrArray
+                    name: 'manager_name',
+                    choices: mgrNameArray
                 }
 
             ]).then((ans) => {
-                    let role_id = parseInt(JSON.parse(ans.role_title).id);
-                    let manager_id = parseInt(JSON.parse(ans.manager_id).id);
-                    //console.log(JSON.parse(ans.role_title).id)
-                    let query = `INSERT INTO employee(first_name, last_name, role_id, manager_id)
-        VALUES ('${ans.first_name}', '${ans.last_name}', ${role_id}, ${manager_id})`
-                });
+                let first = ans.first_name;
+                let last = ans.last_name;
 
+                let role_id = parseInt(roleIdArray[roleTitleArray.indexOf(ans.role_title)]);
+
+                let mgrIndex = mgrNameArray.indexOf(ans.manager_name);
+                let manager_id = (mgrIndex == mgrNameArray.length-1) ? null : parseInt(mgrIdArray[mgrIndex]);
+                
+                query = `insert into employee (first_name, last_name, role_id, manager_id) VALUES ('${first}', '${last}', ${role_id}, ${manager_id})`;
+
+                db.promise().query(query).then((response) => {
+                    console.log('inserted employee');
+                }).catch(err => {
+                    console.log('Unable to insert employee');
+                });
+                
+                doMain();
+
+            });
         });
     });
 
-    console.log('Add Employee');
-    doMain();
 }
 
 
@@ -196,7 +204,7 @@ function updateEmployee() {
 
 function quit() {
     console.log('Bye!');
-    return 'Bye!';
+    process.exit();
 }
 
 const funcs = [viewDepartments, viewRoles, viewEmployees, addDepartment,
