@@ -135,7 +135,7 @@ const addEmployee = () => {
             mgrArray = result.map(e => JSON.stringify(e));
             console.log(mgrArray);
 
-        
+
             inquirer.prompt([
                 {
                     type: 'input',
@@ -161,12 +161,12 @@ const addEmployee = () => {
                 }
 
             ]).then((ans) => {
-                    let role_id = parseInt(JSON.parse(ans.role_title).id);
-                    let manager_id = parseInt(JSON.parse(ans.manager_id).id);
-                    //console.log(JSON.parse(ans.role_title).id)
-                    let query = `INSERT INTO employee(first_name, last_name, role_id, manager_id)
+                let role_id = parseInt(JSON.parse(ans.role_title).id);
+                let manager_id = parseInt(JSON.parse(ans.manager_id).id);
+                //console.log(JSON.parse(ans.role_title).id)
+                let query = `INSERT INTO employee(first_name, last_name, role_id, manager_id)
         VALUES ('${ans.first_name}', '${ans.last_name}', ${role_id}, ${manager_id})`
-                });
+            });
 
         });
     });
@@ -177,6 +177,67 @@ const addEmployee = () => {
 
 
 function updateEmployee() {
+    // go get all employees
+    db.query('SELECT * FROM employee', function (err, employees) {
+        if (err) throw err;
+        console.log(employees)
+        // map employees to employeeChoice obj
+        // dummy var
+        const employeeObjects = employees.map(function (employee) {
+            const name = employee.first_name + " " + employee.last_name;
+            const value = employee.id;
+
+            const employeeObject = {
+                name: name,
+                value: value
+            }
+
+            return employeeObject;
+        })
+
+            console.log(employeeOptions);
+        // go get all of the roles
+        db.query('SELECT * FROM role', function (err, roles) {
+            if (err) throw err;
+            console.log(roles);
+            const roleOptions = roles.map(function (role) {
+                const name = role.title; // get the title from the role obj
+                const value = role.id; // ge the id from the role obj
+                // create a new obj w/ that data
+                const roleOption = {
+                    name: name,
+                    value: value
+                }
+
+                return roleOption;
+            })
+
+            console.log(roleOptions)
+
+            // ask the user which emp to update
+            // and which role to updat
+            inquirer.prompt([{
+                type: 'list',
+                message: 'Which employee are you updating',
+                choices: employeeObjects,
+                name: 'newEmployeeId'
+            },
+            {
+                type: 'list',
+                message: 'What is the new role?',
+                choices: roleOptions,
+                name: 'newRoleId'
+            }]).then(function (answer) {
+                console.log(answer.newRoleId)
+                console.log(answer.newEmployeeId)
+                // use mysql2 to update the roleId in the employee
+                db.query(`UPDATE employee SET role_id = ${answer.newRoleId.value} WHERE id = ${answer.newEmployeeId.value}')`)
+            })
+
+        })
+    })
+
+
     //     // get employee
     //     // get roles
     //     let empNames = [];
