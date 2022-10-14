@@ -29,7 +29,7 @@ function viewRoles() {
         console.table(res);
         doMain();
     });
-    console.log("Roles");
+    // console.log("Roles");
 };
 
 function viewEmployees() {
@@ -115,11 +115,6 @@ function addRole() {
 
 }
 
-
-
-
-// function addEmployee() {
-
 const addEmployee = () => {
 
     db.promise().query('select id, title from role').then(result => {
@@ -184,9 +179,7 @@ const addEmployee = () => {
 
 
 function updateEmployee() {
-    //     // get employee
-    //     // get roles
-    //     let empNames = [];
+    
     db.promise().query('select first_name, last_name, id from employee').then(result2 => {
         let empNameArray = result2[0].map(m => `${m.first_name} ${m.last_name}`);
         let empIdArray = result2[0].map(m => m.id);
@@ -239,7 +232,7 @@ const funcs = [viewDepartments, viewRoles, viewEmployees, addDepartment,
 
 
         function doMain() {
-            console.log('Do Main');
+        
             getSelection(mainQuestions, mainMessage).then((val) => {
 
                 funcs[val]();
